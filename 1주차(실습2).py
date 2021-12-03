@@ -57,7 +57,110 @@ s_model.score(test_x,test_y) # 0.79625
 y_hat = s_model.predict(test_x)
 f1_score(y_hat, test_y) # 0
 
+####### 실습형 2부분 1번 추가 모델 및 K fold
+### https://cafe.naver.com/yjbooks?iframe_url_utf8=%2FArticleRead.nhn%253Fclubid%3D19039057%2526articleid%3D16030
+### 고객의 신상정보 데이터를 통한 회사 서비스 이탈 예측 (종속변수 : Exited)
+### 문제타입 : 분류유형
+### f1-score
 
+train_data = pd.read_csv('https://raw.githubusercontent.com/Datamanim/datarepo/main/churn/train.csv')
+test_data = pd.read_csv('https://raw.githubusercontent.com/Datamanim/datarepo/main/churn/test.csv')
+train_data.keys()
+
+from sklearn.metrics import f1_score
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+
+train_data.keys()
+data_x = train_data.iloc[:,3:-1].copy()
+data_y = train_data.iloc[:,-1].copy()
+
+lcoder = LabelEncoder()
+data_x.Gender = lcoder.fit_transform(data_x.Gender)
+data_x_nation = pd.get_dummies(data_x.Geography)
+data_x.drop(['Geography'], inplace = True, axis = 1)
+data_x = pd.concat([data_x,data_x_nation], axis = 1)
+
+data_x.info()
+data_x.describe()
+
+
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import RobustScaler
+mm_scaler = MinMaxScaler()
+ss_scaler = StandardScaler()
+rr_scaler = RobustScaler()
+for i in data_x.keys():
+    data_x.loc[:,i] = rr_scaler.fit_transform(np.array(data_x.loc[:,i]).reshape(-1,1))
+
+
+from sklearn.metrics import f1_score
+from sklearn.model_selection import KFold
+km = KFold(3)
+from sklearn.ensemble import RandomForestClassifier
+r_model = RandomForestClassifier()
+from sklearn.neighbors import KNeighborsClassifier
+k_model = KNeighborsClassifier()
+from sklearn.svm import SVC
+s_model = SVC(gamma = 'auto')
+from xgboost import XGBClassifier
+x_model = XGBClassifier()
+
+
+for train_idx, test_idx in km.split(data_x):
+    train_x, test_x = data_x.iloc[train_idx], data_x.iloc[test_idx]
+    train_y, test_y = data_y.iloc[train_idx], data_y.iloc[test_idx]
+    r_model.fit(train_x, train_y)
+    print(f'r_model : {f1_score(test_y, r_model.predict(test_x))}')
+    x_model.fit(train_x, train_y)
+    print(f'k_model : {f1_score(test_y, x_model.predict(test_x))}')
+
+temp = dict()
+for i,j in zip(r_model.feature_importances_, data_x.columns):
+    temp[j] = i
+
+sorted(temp.items(), key = lambda x: x[1])
+data_x.drop('HasCrCard', axis = 1, inplace = True)
+data_x.drop('Gender', axis = 1, inplace = True)
+data_x.drop('Geography', axis = 1, inplace = True)
+data_x.drop('IsActiveMember', axis = 1, inplace = True)
+
+data_x.keys()
+
+train_x, test_x, train_y, test_y = train_test_split(data_x, data_y, test_size = 0.2, stratify = data_y)
+
+
+from sklearn.linear_model import LogisticRegression
+model = LogisticRegression(penalty = 'l2', random_state = 1004)
+model.fit(train_x, train_y)
+y_hat = model.predict(test_x) # 0.793125
+model.score(test_x, test_y) 
+f1_score(test_y, y_hat) # 0.12201591511936338
+model.predict_proba(test_x)
+
+
+from sklearn.ensemble import RandomForestClassifier
+r_model = RandomForestClassifier(random_state = 1004)
+r_model.fit(train_x, train_y)
+r_y_hat = r_model.predict(test_x) # 0.861875
+r_model.score(test_x,test_y) 
+f1_score(test_y, r_y_hat) # 0.5774378585086042
+
+
+from sklearn.neighbors import KNeighborsClassifier
+k_model = KNeighborsClassifier()
+k_model.fit(train_x, train_y)
+k_model.score(test_x, test_y) # 0.753125
+y_hat = k_model.predict(test_x) 
+f1_score(test_y, r_y_hat) # 0.5774378585086042
+
+from sklearn.svm import SVC
+s_model =SVC(gamma = 'auto')
+s_model.fit(train_x, train_y)
+s_model.score(test_x,test_y) # 0.79625
+y_hat = s_model.predict(test_x)
+f1_score(y_hat, test_y) # 0
 
 
 ####### 실습형 2부분 2번
